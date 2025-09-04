@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificado de Origen MCA | Blockchain</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Estilo personalizado para la fuente principal */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Clase para animaciones sutiles */
+        .transition-all {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl mx-auto bg-gray-800 rounded-2xl shadow-lg p-8 space-y-8">
+        
+        <header class="text-center">
+            <h1 class="text-4xl font-bold text-cyan-400">Certificado de Origen MCA</h1>
+            <p class="text-gray-400 mt-2">Valida tu origen con la inmutabilidad de la blockchain Polygon.</p>
+        </header>
+
+        <div id="app-container" class="space-y-6">
+
+            <div id="connect-wallet-section">
+                <p class="text-center text-lg mb-4">Para comenzar, conecta tu billetera digital.</p>
+                <button id="connect-wallet-btn" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-all focus:outline-none focus:ring-4 focus:ring-cyan-300">
+                    🔗 Conectar Billetera
+                </button>
+            </div>
+
+            <div id="mint-section" class="hidden space-y-4">
+                <p class="text-center text-green-400 font-medium">✅ Billetera Conectada: <span id="wallet-address" class="font-mono text-xs"></span></p>
+                <div>
+                    <label for="name-input" class="block text-sm font-medium text-gray-300 mb-2">Nombre a certificar:</label>
+                    <input type="text" id="name-input" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-cyan-400" placeholder="Ej: Restaurante El Sol">
+                </div>
+                <p class="text-center text-gray-400">Costo: ~20 MXN (se pagará en MATIC)</p>
+                <button id="mint-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-all focus:outline-none focus:ring-4 focus:ring-green-300">
+                    Sellar mi Certificado en Blockchain
+                </button>
+            </div>
+
+            <div id="loading-section" class="hidden text-center py-8">
+                <svg class="animate-spin h-10 w-10 text-cyan-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="mt-4 text-lg font-medium">Procesando en la blockchain... por favor, espera.</p>
+                <p class="text-gray-400">Confirma la transacción en tu billetera si no lo has hecho.</p>
+            </div>
+
+        </div>
+
+        <div id="certificate-section" class="hidden bg-gray-900 border-2 border-cyan-400 p-8 rounded-lg text-center shadow-2xl">
+            <h2 class="text-3xl font-bold text-green-400 mb-4">¡Certificado Emitido!</h2>
+            <div class="space-y-3 text-lg">
+                <p class="text-gray-300">Este documento certifica que:</p>
+                <p id="certificate-name" class="font-bold text-2xl text-white"></p>
+                <p class="text-gray-300">es un miembro originario verificado de MCA.</p>
+                <p id="certificate-date" class="text-sm text-gray-500"></p>
+            </div>
+            <div class="mt-6 border-t border-gray-700 pt-4">
+                <p class="font-semibold text-cyan-400">Prueba en Blockchain (Polygon)</p>
+                <a id="certificate-link" href="#" target="_blank" class="text-cyan-500 hover:underline break-all font-mono text-sm"></a>
+            </div>
+            <button onclick="window.print()" class="mt-8 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg transition-all">
+                Imprimir Certificado
+            </button>
+        </div>
+        
+    </div>
+
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+        // ¡IMPORTANTE! Reemplaza estos valores con los de tu contrato inteligente.
+        const contractAddress = "0x..."; // Dirección de tu contrato desplegado en Polygon
+        const contractABI = [ /* Pega aquí el ABI completo de tu contrato (es un array JSON) */ ];
+        const sealPrice = "0.5"; // Precio en MATIC (ajusta el equivalente a 20 MXN)
+        
+        // --- ELEMENTOS DEL DOM ---
+        const connectWalletBtn = document.getElementById('connect-wallet-btn');
+        const mintBtn = document.getElementById('mint-btn');
+        const nameInput = document.getElementById('name-input');
+
+        const connectWalletSection = document.getElementById('connect-wallet-section');
+        const mintSection = document.getElementById('mint-section');
+        const loadingSection = document.getElementById('loading-section');
+        const certificateSection = document.getElementById('certificate-section');
+        
+        const walletAddressSpan = document.getElementById('wallet-address');
+        const certificateName = document.getElementById('certificate-name');
+        const certificateDate = document.getElementById('certificate-date');
+        const certificateLink = document.getElementById('certificate-link');
+        
+        let signer;
+        let contract;
+
+        // --- LÓGICA DE LA APP ---
+        
+        // 1. Conectar a la billetera
+        connectWalletBtn.addEventListener('click', async () => {
+            if (typeof window.ethereum === 'undefined') {
+                alert('Por favor, instala MetaMask para usar esta función.');
+                return;
+            }
+
+            try {
+                // Solicitar conexión a MetaMask
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                const address = await signer.getAddress();
+
+                // Inicializar el contrato
+                contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+                // Actualizar la interfaz
+                walletAddressSpan.textContent = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+                connectWalletSection.classList.add('hidden');
+                mintSection.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error conectando la billetera:", error);
+                alert("Hubo un error al conectar la billetera. Inténtalo de nuevo.");
+            }
+        });
+
+        // 2. Acuñar el certificado (NFT)
+        mintBtn.addEventListener('click', async () => {
+            const name = nameInput.value;
+            if (!name) {
+                alert("Por favor, introduce un nombre para certificar.");
+                return;
+            }
+
+            // Ocultar sección de acuñar y mostrar carga
+            mintSection.classList.add('hidden');
+            loadingSection.classList.remove('hidden');
+
+            try {
+                const priceInWei = ethers.utils.parseEther(sealPrice);
+                
+                // Llamar a la función del contrato inteligente
+                // Asegúrate que tu contrato tenga una función `safeMint(nombre)` que sea `payable`
+                const tx = await contract.safeMint(name, { value: priceInWei });
+                
+                // Esperar a que la transacción sea minada
+                const receipt = await tx.wait();
+
+                // Mostrar el certificado
+                displayCertificate(name, receipt.transactionHash);
+
+            } catch (error) {
+                console.error("Error al acuñar el certificado:", error);
+                alert(`Error: ${error.message}`);
+                // Revertir la interfaz en caso de error
+                loadingSection.classList.add('hidden');
+                mintSection.classList.remove('hidden');
+            }
+        });
+
+        // 3. Mostrar el certificado final
+        function displayCertificate(name, txHash) {
+            loadingSection.classList.add('hidden');
+            document.getElementById('app-container').classList.add('hidden'); // Ocultar el contenedor de la app
+
+            certificateName.textContent = name;
+            certificateDate.textContent = `Emitido el: ${new Date().toLocaleDateString()}`;
+            const polygonScanUrl = `https://polygonscan.com/tx/${txHash}`;
+            certificateLink.href = polygonScanUrl;
+            certificateLink.textContent = txHash;
+            
+            certificateSection.classList.remove('hidden');
+        }
+
+    </script>
+</body>
+</html>
